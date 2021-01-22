@@ -1,27 +1,45 @@
 ---
-title: "Project_LG_CS"
-author: "Lasha Gochiashvili"
-date: "1/17/2021"
-output: html_document
+title: "Visualizations in R"
+author: 'Lasha Gochiashvili & Catherine Sunil'
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+    
 ---
 
-```{r setup, include=FALSE}
+
+```{r setup, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=FALSE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
 Libraries
 
-```{r warning = FALSE}
+```{r echo=FALSE, warning = FALSE, comment=FALSE}
 library(readr)
 library(dplyr)
 library(tidyverse)
+library(gganimate)
+library(DT)
 ```
 
 Unnecessary staff
 
-```{r}
-#data <-
-#  read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv")
+```{r warning = FALSE, echo=FALSE, comment=FALSE}
+#data <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv")
   
   
 #data2 <- read_csv("https://www.imf.org/external/np/fin/data/rms_mth.aspx?SelectDate=2020-10-31&reportType=SDRCV&tsvflag=Y")
@@ -37,7 +55,7 @@ load data
 ```{r}
 data <- read.csv("owid-covid-data.csv", stringsAsFactors = F)
 data$date <- as.Date(data$date, "%Y-%m-%d")
-head(data)
+datatable((data), caption = 'Table 1: This is a simple caption for the table.', class = 'cell-border stripe', options = list(pageLength = 5))
 ```
 
 
@@ -64,7 +82,7 @@ head(data_sel)
 ```
 
 
-```{r}
+```{r warning = FALSE, message = FALSE}
 library(plotly)
 
 a <- ggplot(data_agg) + 
@@ -107,7 +125,7 @@ ggplot(data=data_agg, aes(x= total_cases, y = continent, fill=continent)) +
                                   color = 'brown'))
 
 ```
-```{r}
+```{r, warning=FALSE, comment=FALSE}
 ggplot(data = data_agg, aes(x = total_cases)) +
   geom_bar(stat = 'count', fill = 'darkgreen', color = 'darkgreen',
            aes(y = ..count..)) +
@@ -129,24 +147,26 @@ ggplot(data_agg, aes(x = gdp_per_capita, fill = continent)) +
 #ggplotly(b)
 ```
 
-```{r}
-library(gganimate)
-library(gapminder)
-start_pause <- 0
-end_pause <- 0
-
-ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) +
-  geom_point(alpha = 0.7, show.legend = FALSE) +
-  scale_colour_manual(values = country_colors) +
-  scale_size(range = c(2, 12)) +
-  scale_x_log10() +
-  facet_wrap(~continent) +
-  # Here comes the gganimate specific bits
-  labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') +
-  transition_time(year) +
-  ease_aes('linear')
+```{r eval=FALSE}
+# library(gganimate)
+# library(gapminder)
+# start_pause <- 0
+# end_pause <- 0
+# 
+# ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) +
+#   geom_point(alpha = 0.7, show.legend = FALSE) +
+#   scale_colour_manual(values = country_colors) +
+#   scale_size(range = c(2, 12)) +
+#   scale_x_log10() +
+#   facet_wrap(~continent) +
+#   # Here comes the gganimate specific bits
+#   labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') +
+#   transition_time(year) +
+#   ease_aes('linear')
 
 ```
+
+
 ```{r}
 head(data_sel)
 ```
@@ -157,15 +177,15 @@ head(data_anim)
 ```
 
 
-```{r}
+```{r message = FALSE, warning = FALSE, results = FALSE}
 #data_anim <- data_sel %>% filter(location %in% c("Germany","Canada", "Mexico", 
 #                                                 "Italy", "Spain", "Poland"))
 
-data_anim <- data_sel %>% 
-  filter(continent %in% c("africa", "Asia", "Europe", "North America", 
+data_anim <- data_sel %>%
+  filter(continent %in% c("africa", "Asia", "Europe", "North America",
                           "South America", "Oceania"))
 data_anim <- data_anim[complete.cases(data_anim),]
-ggplot(data_anim, aes(total_cases, total_deaths, 
+nice <- ggplot(data_anim, aes(total_cases, total_deaths,
                      size = population, colour = continent)) +
   geom_point(alpha = 0.7, show.legend = FALSE) +
   scale_size(range = c(2, 12)) +
@@ -176,11 +196,24 @@ ggplot(data_anim, aes(total_cases, total_deaths,
   transition_time(date) +
   ease_aes('linear')
 
+anim_save("nice.gif", nice)
+
 ```
+
+![](nice.gif)
+
+
+
+```{r}
+
+
+
+```
+
 
 for maps:
 
-```{r}
+```{r warning = FALSE}
 library(tidyverse)
 library(rnaturalearth)
 library(cowplot)
@@ -223,14 +256,14 @@ head(world)
 ```
 
 ```{r}
-ggplot(data = world) +
-  geom_sf(aes(fill = income_grp )) +
-  coord_sf(expand = FALSE) +
-  # geom_sf(aes(fill =  pop_est)) +
-  scale_fill_brewer(palette = 'YlOrBr') +
-  # scale_fill_viridis_c(option = "plasma", trans = "sqrt", guide = guide_colorbar(barwidth = 30), name = NULL) +
-  theme(legend.position = 'right') 
-  # theme(legend.position = 'bottom')
+# ggplot(data = world) +
+#   geom_sf(aes(fill = income_grp )) +
+#   coord_sf(expand = FALSE) +
+#   # geom_sf(aes(fill =  pop_est)) +
+#   scale_fill_brewer(palette = 'YlOrBr') +
+#   # scale_fill_viridis_c(option = "plasma", trans = "sqrt", guide = guide_colorbar(barwidth = 30), name = NULL) +
+#   theme(legend.position = 'right') 
+#   # theme(legend.position = 'bottom')
 
 
 ```
@@ -303,53 +336,53 @@ ggplot(d, aes(time, country)) +
 
 ```{r}
 
-require(nCov2019)
-y <- load_nCov2019(lang = 'en', source='github')
-d = y['global']
-
-
-require(dplyr)
-dd <- filter(d, time == time(y)) %>% 
-    arrange(desc(cum_confirm)) 
-
-dd = dd[1:40, ]
-dd$country = factor(dd$country, levels=dd$country)
-
-dd$angle = 1:40 * 360/40
-require(ggplot2)
-p <- ggplot(dd, aes(country, cum_confirm, fill=cum_confirm)) + 
-    geom_col(width=1, color='grey90') + 
-    geom_col(aes(y=I(5)), width=1, fill='grey90', alpha = .2) +       
-    geom_col(aes(y=I(3)), width=1, fill='grey90', alpha = .2) +    
-    geom_col(aes(y=I(2)), width=1, fill = "white") +
-    scale_y_log10() + 
-    scale_fill_gradientn(colors=c("darkgreen", "green", "orange", "firebrick","red"), trans="log") + 
-    geom_text(aes(label=paste(country, cum_confirm, sep="\n"), 
-                  y = cum_confirm *.8, angle=angle), 
-            data=function(d) d[d$cum_confirm > 700,], 
-            size=3, color = "white", fontface="bold", vjust=1)  + 
-     geom_text(aes(label=paste0(cum_confirm, " cases ", country), 
-                  y = max(cum_confirm) * 2, angle=angle+90), 
-            data=function(d) d[d$cum_confirm < 700,], 
-            size=3, vjust=0) + 
-    coord_polar(direction=-1) + 
-    theme_void() + 
-    theme(legend.position="none") +
-    ggtitle("COVID19 global trend", time(y))
-
-print(p)
+# require(nCov2019)
+# y <- load_nCov2019(lang = 'en', source='github')
+# d = y['global']
+# 
+# 
+# require(dplyr)
+# dd <- filter(d, time == time(y)) %>% 
+#     arrange(desc(cum_confirm)) 
+# 
+# dd = dd[1:40, ]
+# dd$country = factor(dd$country, levels=dd$country)
+# 
+# dd$angle = 1:40 * 360/40
+# require(ggplot2)
+# p <- ggplot(dd, aes(country, cum_confirm, fill=cum_confirm)) + 
+#     geom_col(width=1, color='grey90') + 
+#     geom_col(aes(y=I(5)), width=1, fill='grey90', alpha = .2) +       
+#     geom_col(aes(y=I(3)), width=1, fill='grey90', alpha = .2) +    
+#     geom_col(aes(y=I(2)), width=1, fill = "white") +
+#     scale_y_log10() + 
+#     scale_fill_gradientn(colors=c("darkgreen", "green", "orange", "firebrick","red"), trans="log") + 
+#     geom_text(aes(label=paste(country, cum_confirm, sep="\n"), 
+#                   y = cum_confirm *.8, angle=angle), 
+#             data=function(d) d[d$cum_confirm > 700,], 
+#             size=3, color = "white", fontface="bold", vjust=1)  + 
+#      geom_text(aes(label=paste0(cum_confirm, " cases ", country), 
+#                   y = max(cum_confirm) * 2, angle=angle+90), 
+#             data=function(d) d[d$cum_confirm < 700,], 
+#             size=3, vjust=0) + 
+#     coord_polar(direction=-1) + 
+#     theme_void() + 
+#     theme(legend.position="none") +
+#     ggtitle("COVID19 global trend", time(y))
+# 
+# print(p)
 ```
 
 ```{r}
 
-library('maps')
-x = world
-plot(x)
+# library('maps')
+# x = world
+# plot(x)
 
 ```
 
 
-```{r cars}
+```{r cars, echo=FALSE, eval = FALSE}
 
 
 #OECD <- c("Austria", "Australia", "Belgium", "Canada", "Chile", "Colombia", 
@@ -364,192 +397,192 @@ plot(x)
 
 #data <- data.frame(data)
 
-table(data$OECD)
-
-glimpse(data)
-summary(data)
-
-hist(data$OECD)
-
-EU <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", 
-        "Czech Republic", "Denmark", "Estonia", "Finland", "France", 
-        "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", 
-        "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", 
-        "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
-
-data$EU <- ifelse(data$location %in% EU, 1, 0)
-head(data$EU)
-
-hist(data$EU)
-
-
-
-p2 <- ggplot(movies, aes(x = rank, # Sort by rank on the horizontal axis
-                         y = p10*votes/1000, # On the vertical axis we put the total number of "10"s
-                         color = (year>2000))) + # mark XXI century with different color
-  labs(x = "IMDB Rank",
-       y = "Total number of '10's",
-       title = "IMDB Rank vs Total Number of '10's",
-       caption = 'source: www.imdb.com') +
-  theme(panel.background = element_rect(fill = 'grey', color = 'white', size = 1.2),
-        plot.background = element_rect(fill = 'grey'),
-        plot.title = element_text(hjust = 0.5, size =16, face='bold', 
-                                  color = 'brown'),
-        plot.caption = element_text(face = 'italic', color = 'brown'),
-        panel.grid.major = element_line(linetype = 'dashed', size =0.1),
-        panel.grid.minor = element_blank()) +
-  
-  geom_point() 
-
-p2
-
-
-p3 + guides(color =  guide_legend(title = "Okres",
-                                  title.position = "left",
-                                  title.hjust = 0.5,
-                                  title.theme = element_text(size = 15, # font size
-                                                             face = "bold", # font sub-type (bold)
-                                                             colour = "blue", # font color
-                                                             angle = 90 ))) # rotate font box
-
-p4 + guides(alpha=guide_legend(title = "Median Prices $K",
-                               title.position = "right",
-                               title.hjust = 0.5,
-                               title.theme = element_text(size = 10, # font size
-                                                          face = "bold", # font sub-type (bold)
-                                                          colour = "brown", # font color
-                                                          angle = 90 ),
-                               override.aes = list(shape = 15, size = 8),
-                               reverse = TRUE)) +
-  labs(title = "Mean No. of rooms vs % of lower class ppl") +
-  theme(plot.title = element_text(size =12, face='bold', 
-                                  color = 'brown'))
-
-p1 <- p + 
-  labs(x = "Year", y = "Budget", title = "Budget vs Year of production") + 
-  geom_point() + 
-  scale_y_continuous(name = "Budged ['000 of USD]",
-                     breaks = seq(0,200000000,by = 10000000), # use function seq() - operate on original scale values
-                     labels = format(seq(0,200000,by=10000), big.mark = " "),
-                     limits = c(0, 100000000)) # put scaled labels with space as bigval separator
-p1
-
-p1 + geom_point(aes(color = rating)) + 
-  scale_color_gradient2(low = 'red', mid = 'orange',   high="yellow", midpoint = mean(movies$rating))
-
-p1 + theme(panel.background = element_rect(fill = 'grey', color = '#377EB8', size = 1.2),
-           plot.background = element_rect(fill = 'grey'),
-           plot.title = element_text(hjust = 0.5, size =16, face='bold', 
-                                     color = 'red'),
-           panel.grid.major = element_line(linetype = 'dashed', size =0.1),
-           panel.grid.minor = element_blank(),
-           legend.position = 'bottom',
-           legend.background = element_rect(fill='grey', linetype = 'solid',
-                                            colour = '#377EB8', size=1))
-
-
-
-ggplot(data = rs, aes(x = Age)) +
-  geom_bar(stat = 'count', fill = 'darkgreen', color = 'darkgreen',
-           aes(y = ..count..)) +
-  theme_minimal() +
-  geom_text(aes(label = ..count..), stat = 'count', vjust = -.4)
-
-# colors: "#999999", "#E69F00", "#56B4E9"
-
-
-
-
-# Read data
-hp <- read.csv2('happy2015.csv', header = TRUE, sep = ",", dec = ".") 
-
-glimpse(hp)
-
-# Group the data:
-hp2 <- hp %>% 
-  group_by(Region) %>% 
-  dplyr::summarise(N = n(), Mean.happiness = round(mean(Happiness.Score),2))
-
-hp2
-
-# if we use this data for geom_bar it does not work:
-
-ggplot(data=hp2, aes(x= Mean.happiness, y = Region, fill=Region)) +
-  geom_bar(width = 0.5, stat = 'identity') +
-  labs(title = 'Happiness AVG Score by Reg.',
-       subtitle = '0 - not happy; 10 - very happy') + 
-  xlab('Mean Happiness') +
-  ylab('Region') +
-  theme(legend.position = "none",
-        text = element_text(size=8),
-        axis.text.y = element_text(hjust=1)) +
-  geom_text(aes(label = Mean.happiness), vjust =0.5, hjust=-0.03, 
-            color = 'darkgreen', size = 3.5) +# since the bars are horizontal I put
-  # the labels next to the bars
-  theme(plot.title = element_text(size =12, face='bold', 
-                                  color = 'brown'))
-
-
-
-rs <- read.csv2('data/responses.csv', header = TRUE, sep = ",", dec = ".") 
-glimpse(rs)
-
-rs_2 <- rs %>% 
-  dplyr::group_by(Fear.of.public.speaking, Gender) %>% 
-  dplyr::summarise(number = length(Fear.of.public.speaking))
-
-
-
-ggplot(data=rs_2, aes(x= factor(Fear.of.public.speaking),
-                      y=number, fill=factor(Gender))) +
-  geom_bar(width = 0.5, stat = 'identity', position="stack") +
-  labs(title = 'People with Fear of Public Speaking',
-       caption = '1 - not afraid; 5 - much afraid',
-       x = 'Fear of Public Speaking',
-       y = 'Number of people',
-       fill = 'Gender') +
-  scale_fill_manual(values = c('deepskyblue3', 'dodgerblue4')) +
-  theme(legend.position = 'left', plot.title = element_text(size =12, face='bold', 
-                                                            color = 'brown')) +
-  geom_text(aes(label = number), position = 'stack',
-            vjust =-0.5, hjust=0.5, size = 3.5) 
-
-
-glimpse(rs)
-
-
-rs_3 <- rs %>% 
-  dplyr::group_by(Education, Entertainment.spending) %>% 
-  dplyr::summarise(number = length(Education))
-
-glimpse(rs_3)
-
-ggplot(data=rs_3, aes(x= Education,
-                      y=number, fill=factor(Entertainment.spending))) +
-  geom_bar(width = 0.5, stat = 'identity', position="dodge") +
-  labs(title = 'Attitude to savings vs the education level',
-       Caption = '1 - low spending; 5 - high spending',
-       x = 'Education level',
-       y = 'Number of respondents') +
-  scale_fill_manual(values = c('deepskyblue3', 'khaki', "#999999", "#E69F00", "#56B4E9")) +
-  geom_text(aes(label = number), vjust = -.5, position = position_dodge(.5),
-            size = 2.5) +
-  theme(legend.position = 'left', text = element_text(size=8),
-        plot.title = element_text(size =12, face='bold', 
-                                  color = 'brown'),
-        panel.background = element_rect(fill = 'grey', color = 'white', size = 1.2),
-        plot.background = element_rect(fill = 'grey'),
-        panel.grid= element_line(linetype = 'dashed', size =0.1)) +
-  guides(fill=guide_legend(title = "Scale of Spending",
-                           title.position = "left",
-                           title.hjust = 0.5,
-                           title.theme = element_text(size = 10, # font size
-                                                      face = "bold", # font sub-type (bold)
-                                                      colour = "brown", # font color
-                                                      angle = 90 )))
-
-
-
+# table(data$OECD)
+# 
+# glimpse(data)
+# summary(data)
+# 
+# hist(data$OECD)
+# 
+# EU <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", 
+#         "Czech Republic", "Denmark", "Estonia", "Finland", "France", 
+#         "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", 
+#         "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", 
+#         "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
+# 
+# data$EU <- ifelse(data$location %in% EU, 1, 0)
+# head(data$EU)
+# 
+# hist(data$EU)
+# 
+# 
+# 
+# p2 <- ggplot(movies, aes(x = rank, # Sort by rank on the horizontal axis
+#                          y = p10*votes/1000, # On the vertical axis we put the total number of "10"s
+#                          color = (year>2000))) + # mark XXI century with different color
+#   labs(x = "IMDB Rank",
+#        y = "Total number of '10's",
+#        title = "IMDB Rank vs Total Number of '10's",
+#        caption = 'source: www.imdb.com') +
+#   theme(panel.background = element_rect(fill = 'grey', color = 'white', size = 1.2),
+#         plot.background = element_rect(fill = 'grey'),
+#         plot.title = element_text(hjust = 0.5, size =16, face='bold', 
+#                                   color = 'brown'),
+#         plot.caption = element_text(face = 'italic', color = 'brown'),
+#         panel.grid.major = element_line(linetype = 'dashed', size =0.1),
+#         panel.grid.minor = element_blank()) +
+#   
+#   geom_point() 
+# 
+# p2
+# 
+# 
+# p3 + guides(color =  guide_legend(title = "Okres",
+#                                   title.position = "left",
+#                                   title.hjust = 0.5,
+#                                   title.theme = element_text(size = 15, # font size
+#                                                              face = "bold", # font sub-type (bold)
+#                                                              colour = "blue", # font color
+#                                                              angle = 90 ))) # rotate font box
+# 
+# p4 + guides(alpha=guide_legend(title = "Median Prices $K",
+#                                title.position = "right",
+#                                title.hjust = 0.5,
+#                                title.theme = element_text(size = 10, # font size
+#                                                           face = "bold", # font sub-type (bold)
+#                                                           colour = "brown", # font color
+#                                                           angle = 90 ),
+#                                override.aes = list(shape = 15, size = 8),
+#                                reverse = TRUE)) +
+#   labs(title = "Mean No. of rooms vs % of lower class ppl") +
+#   theme(plot.title = element_text(size =12, face='bold', 
+#                                   color = 'brown'))
+# 
+# p1 <- p + 
+#   labs(x = "Year", y = "Budget", title = "Budget vs Year of production") + 
+#   geom_point() + 
+#   scale_y_continuous(name = "Budged ['000 of USD]",
+#                      breaks = seq(0,200000000,by = 10000000), # use function seq() - operate on original scale values
+#                      labels = format(seq(0,200000,by=10000), big.mark = " "),
+#                      limits = c(0, 100000000)) # put scaled labels with space as bigval separator
+# p1
+# 
+# p1 + geom_point(aes(color = rating)) + 
+#   scale_color_gradient2(low = 'red', mid = 'orange',   high="yellow", midpoint = mean(movies$rating))
+# 
+# p1 + theme(panel.background = element_rect(fill = 'grey', color = '#377EB8', size = 1.2),
+#            plot.background = element_rect(fill = 'grey'),
+#            plot.title = element_text(hjust = 0.5, size =16, face='bold', 
+#                                      color = 'red'),
+#            panel.grid.major = element_line(linetype = 'dashed', size =0.1),
+#            panel.grid.minor = element_blank(),
+#            legend.position = 'bottom',
+#            legend.background = element_rect(fill='grey', linetype = 'solid',
+#                                             colour = '#377EB8', size=1))
+# 
+# 
+# 
+# ggplot(data = rs, aes(x = Age)) +
+#   geom_bar(stat = 'count', fill = 'darkgreen', color = 'darkgreen',
+#            aes(y = ..count..)) +
+#   theme_minimal() +
+#   geom_text(aes(label = ..count..), stat = 'count', vjust = -.4)
+# 
+# # colors: "#999999", "#E69F00", "#56B4E9"
+# 
+# 
+# 
+# 
+# # Read data
+# hp <- read.csv2('happy2015.csv', header = TRUE, sep = ",", dec = ".") 
+# 
+# glimpse(hp)
+# 
+# # Group the data:
+# hp2 <- hp %>% 
+#   group_by(Region) %>% 
+#   dplyr::summarise(N = n(), Mean.happiness = round(mean(Happiness.Score),2))
+# 
+# hp2
+# 
+# # if we use this data for geom_bar it does not work:
+# 
+# ggplot(data=hp2, aes(x= Mean.happiness, y = Region, fill=Region)) +
+#   geom_bar(width = 0.5, stat = 'identity') +
+#   labs(title = 'Happiness AVG Score by Reg.',
+#        subtitle = '0 - not happy; 10 - very happy') + 
+#   xlab('Mean Happiness') +
+#   ylab('Region') +
+#   theme(legend.position = "none",
+#         text = element_text(size=8),
+#         axis.text.y = element_text(hjust=1)) +
+#   geom_text(aes(label = Mean.happiness), vjust =0.5, hjust=-0.03, 
+#             color = 'darkgreen', size = 3.5) +# since the bars are horizontal I put
+#   # the labels next to the bars
+#   theme(plot.title = element_text(size =12, face='bold', 
+#                                   color = 'brown'))
+# 
+# 
+# 
+# rs <- read.csv2('data/responses.csv', header = TRUE, sep = ",", dec = ".") 
+# glimpse(rs)
+# 
+# rs_2 <- rs %>% 
+#   dplyr::group_by(Fear.of.public.speaking, Gender) %>% 
+#   dplyr::summarise(number = length(Fear.of.public.speaking))
+# 
+# 
+# 
+# ggplot(data=rs_2, aes(x= factor(Fear.of.public.speaking),
+#                       y=number, fill=factor(Gender))) +
+#   geom_bar(width = 0.5, stat = 'identity', position="stack") +
+#   labs(title = 'People with Fear of Public Speaking',
+#        caption = '1 - not afraid; 5 - much afraid',
+#        x = 'Fear of Public Speaking',
+#        y = 'Number of people',
+#        fill = 'Gender') +
+#   scale_fill_manual(values = c('deepskyblue3', 'dodgerblue4')) +
+#   theme(legend.position = 'left', plot.title = element_text(size =12, face='bold', 
+#                                                             color = 'brown')) +
+#   geom_text(aes(label = number), position = 'stack',
+#             vjust =-0.5, hjust=0.5, size = 3.5) 
+# 
+# 
+# glimpse(rs)
+# 
+# 
+# rs_3 <- rs %>% 
+#   dplyr::group_by(Education, Entertainment.spending) %>% 
+#   dplyr::summarise(number = length(Education))
+# 
+# glimpse(rs_3)
+# 
+# ggplot(data=rs_3, aes(x= Education,
+#                       y=number, fill=factor(Entertainment.spending))) +
+#   geom_bar(width = 0.5, stat = 'identity', position="dodge") +
+#   labs(title = 'Attitude to savings vs the education level',
+#        Caption = '1 - low spending; 5 - high spending',
+#        x = 'Education level',
+#        y = 'Number of respondents') +
+#   scale_fill_manual(values = c('deepskyblue3', 'khaki', "#999999", "#E69F00", "#56B4E9")) +
+#   geom_text(aes(label = number), vjust = -.5, position = position_dodge(.5),
+#             size = 2.5) +
+#   theme(legend.position = 'left', text = element_text(size=8),
+#         plot.title = element_text(size =12, face='bold', 
+#                                   color = 'brown'),
+#         panel.background = element_rect(fill = 'grey', color = 'white', size = 1.2),
+#         plot.background = element_rect(fill = 'grey'),
+#         panel.grid= element_line(linetype = 'dashed', size =0.1)) +
+#   guides(fill=guide_legend(title = "Scale of Spending",
+#                            title.position = "left",
+#                            title.hjust = 0.5,
+#                            title.theme = element_text(size = 10, # font size
+#                                                       face = "bold", # font sub-type (bold)
+#                                                       colour = "brown", # font color
+#                                                       angle = 90 )))
+# 
+# 
+# 
 
 
 ```
@@ -558,7 +591,7 @@ ggplot(data=rs_3, aes(x= Education,
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
+```{r pressure, echo=FALSE, eval = FALSE}
 plot(pressure)
 ```
 
