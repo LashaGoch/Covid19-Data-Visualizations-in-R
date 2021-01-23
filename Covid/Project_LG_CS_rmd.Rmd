@@ -33,13 +33,22 @@ library(readr)
 library(dplyr)
 library(tidyverse)
 library(gganimate)
+library(gifski)
+library(png)
+library(gapminder)
 library(DT)
 ```
 
 Unnecessary staff
 
+
+
+
+
+
+
 ```{r warning = FALSE, echo=FALSE, comment=FALSE}
-#data <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv")
+data <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv")
   
   
 #data2 <- read_csv("https://www.imf.org/external/np/fin/data/rms_mth.aspx?SelectDate=2020-10-31&reportType=SDRCV&tsvflag=Y")
@@ -53,18 +62,20 @@ Unnecessary staff
 load data
 
 ```{r}
-data <- read.csv("owid-covid-data.csv", stringsAsFactors = F)
+#data <- read.csv("owid-covid-data.csv", stringsAsFactors = F)
 data$date <- as.Date(data$date, "%Y-%m-%d")
-datatable((data), caption = 'Table 1: This is a simple caption for the table.', class = 'cell-border stripe', options = list(pageLength = 5))
+datatable(head(data), caption = 'Table 1: This is a simple caption for the table.', class = 'cell-border stripe')
 ```
 
 
 ```{r}
 temp <- data.frame(data) %>% select(continent, location, gdp_per_capita,
-                                    population_density, total_cases, population)
+                                    population_density, total_cases, 
+                                    total_cases_per_million, population)
 temp <- subset(temp, location!="World" & location!="International")
 data_agg <- aggregate(temp, list(temp$location, temp$continent, 
                                  temp$gdp_per_capita, temp$population_density), max)
+
 data_agg$Group.1 <- NULL
 data_agg$Group.2 <- NULL
 data_agg$Group.3 <- NULL
@@ -74,35 +85,103 @@ head(data_agg)
 data_agg[data_agg$location == "Zimbabwe",]
 ```
 
+
+
+
+```{r}
+
+data_agg$total_cases_per_million_group <- cut(data_agg$total_cases_per_million, breaks=c(0,5000,50000,100000), include.lowest = FALSE, dig.lab = 6)
+
+data_for_dist <- data_agg %>%
+  count(continent, total_cases_per_million_group)
+
+data_for_dist <-  na.omit(data_for_dist)
+head(data_for_dist)
+ggplot(data_for_dist, aes(x = continent, y = total_cases_per_million_group)) + 
+  geom_tile(aes(fill = n), color = 'white', show.legend = F) +
+  theme_minimal() + 
+  geom_text(aes(label = n), size = 5, fontface = 'bold', color = 'white') +
+  labs(title = 'Countries with total cases per mln.') +
+  scale_fill_gradient(low = '#6bb0c4', high = '#dd5f64') +
+  theme(panel.grid = element_blank())
+
+
+```
+
 ```{r}
 data_sel <- data.frame(data) %>% select(continent, location, date, new_cases, 
                                         new_deaths, total_cases, total_deaths,
-                                        population)
+                                        total_cases_per_million, population)
+
 head(data_sel)
 ```
+
+
+```{r}
+library(lubridate)
+library(dplyr)
+
+EU <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus",
+        "Czech Republic", "Denmark", "Estonia", "Finland", "France",
+        "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia",
+        "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland",
+        "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
+
+
+data_for_month <- data.frame(data) %>% select(location, date, new_cases) %>% 
+  filter(location %in% EU)
+
+data_for_month$month <- floor_date(data_for_month$date, "month")
+
+data_for_month <- as.tibble(data_for_month) %>%
+  group_by(location, month) %>%
+  summarize(new_cases = as.numeric(sum(new_cases))) 
+  #mutate(new_cases = scale(new_cases))
+data_for_month$month<-as.character(data_for_month$month)
+
+ggplot(data_for_month, aes(month, location)) + 
+  geom_tile(aes(fill = new_cases), colour = "white") + 
+  scale_x_discrete("", expand = c(0, 0)) + 
+  scale_y_discrete("", expand = c(0, 0)) + 
+  #scale_fill_gradient(low="orange", high = "red")+
+  #scale_fill_distiller(palette = "RdPu")+
+  #theme_grey(base_size = 9) + 
+  scale_fill_gradient2(low = "#006400", mid = "#f2f6c3", high = "#cd0000", 
+                       midpoint = 0.5)+
+  theme(legend.position = "bottom",
+        axis.ticks = element_blank(), 
+        axis.text.x = element_text(angle = 90, hjust = 0.5))
+
+#ggplotly(c, tooltip="text")
+
+```
+
+
+
 
 
 ```{r warning = FALSE, message = FALSE}
 library(plotly)
 
-a <- ggplot(data_agg) + 
-  geom_point(aes(x = total_cases, y = population, color = continent, 
-                 size = gdp_per_capita)) +
+ggplot(data_agg) + 
+  geom_point(aes(x = total_cases, y = gdp_per_capita, color = continent, 
+                 size = population), alpha=0.5) +
     labs(x = 'Total Cases',
-       y = 'Population',
-       title = "Covid total cases vs population",
+       y = 'GDP per capita',
+       title = "Covid total cases vs GDP per capita",
        caption = 'source: ') +
-  theme(panel.background = element_rect(fill = 'grey', color = 'white', size = 1.2),
-        plot.background = element_rect(fill = 'grey'),
+  theme(panel.background = element_rect(fill = 'white', color = 'white', size = 1.2),
+        plot.background = element_rect(fill = 'white'),
         plot.title = element_text(hjust = 0.5, size =16, face='bold', 
                                   color = 'brown'),
         plot.caption = element_text(face = 'italic', color = 'brown'),
         panel.grid.major = element_line(linetype = 'dashed', size =0.1),
         panel.grid.minor = element_blank()) +
-  scale_x_continuous(trans = "log10")+
-  scale_y_continuous(trans = "log10")
+  scale_x_continuous(trans = "log2")+
+  scale_y_continuous(trans = "log2") + 
+  scale_size(range = c(.1, 24), name="Population (M)")
 
-ggplotly(a)
+#ggplotly(a)
 ```
 
 
@@ -125,20 +204,27 @@ ggplot(data=data_agg, aes(x= total_cases, y = continent, fill=continent)) +
                                   color = 'brown'))
 
 ```
-```{r, warning=FALSE, comment=FALSE}
-ggplot(data = data_agg, aes(x = total_cases)) +
-  geom_bar(stat = 'count', fill = 'darkgreen', color = 'darkgreen',
-           aes(y = ..count..)) +
-  theme_minimal() +
-  geom_text(aes(label = ..count..), stat = 'count', vjust = -.4)
+
+
+```{r}
+library(ggiraph)
+# Basic plot: 
+g <- ggplot(data_agg, 
+            aes(x = gdp_per_capita, y = total_cases_per_million, color =population_density))
+
+# Interactiveness:
+g_int <- g + geom_point_interactive(aes(tooltip = location), size = 2)
+
+# Wyświetlenie
+ggiraph(code = print(g_int))
+
+
+
 ```
 
-```{r warning=FALSE}
-ggplot(iris, aes(x = Sepal.Width, fill = Species)) + 
-  geom_histogram(data = iris[,-5], fill = "grey", alpha = .5, bins = 30) + 
-  geom_histogram(colour = "black", bins = 30) +
-  facet_wrap(~ Species) + guides(fill = FALSE) 
 
+
+```{r warning=FALSE}
 ggplot(data_agg, aes(x = gdp_per_capita, fill = continent)) + 
   geom_histogram(data = data_agg[,-5], fill = "grey", alpha = .5, bins = 30) + 
   geom_histogram(colour = "black", bins = 30) +
@@ -185,7 +271,7 @@ data_anim <- data_sel %>%
   filter(continent %in% c("africa", "Asia", "Europe", "North America",
                           "South America", "Oceania"))
 data_anim <- data_anim[complete.cases(data_anim),]
-nice <- ggplot(data_anim, aes(total_cases, total_deaths,
+gifplot <- ggplot(data_anim, aes(total_cases, total_deaths,
                      size = population, colour = continent)) +
   geom_point(alpha = 0.7, show.legend = FALSE) +
   scale_size(range = c(2, 12)) +
@@ -196,19 +282,13 @@ nice <- ggplot(data_anim, aes(total_cases, total_deaths,
   transition_time(date) +
   ease_aes('linear')
 
-anim_save("nice.gif", nice)
+animate(gifplot, duration = 5, fps = 20, renderer = gifski_renderer())
+anim_save("gifplot.gif")
 
 ```
 
-![](nice.gif)
+![](gifplot.gif)
 
-
-
-```{r}
-
-
-
-```
 
 
 for maps:
