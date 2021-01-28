@@ -64,7 +64,8 @@ datatable(head(data), caption = 'Table 1: This is a simple caption for the table
 
 
 ```{r chunk}
-temp <- data.frame(data) %>% select(continent, location, gdp_per_capita,
+
+temp <- data.frame(data) %>% dplyr::select(continent, location, gdp_per_capita,
                                     population_density, total_cases, 
                                     total_cases_per_million, population)
 temp <- subset(temp, location!="World" & location!="International")
@@ -97,7 +98,7 @@ ggplot(data_for_dist, aes(x = continent, y = total_cases_per_million_group)) +
 ```
 
 ```{r}
-data_sel <- data.frame(data) %>% select(continent, location, date, new_cases, 
+data_sel <- data.frame(data) %>% dplyr::select(continent, location, date, new_cases, 
                                         new_deaths, total_cases, total_deaths,
                                         total_cases_per_million, population)
 head(data_sel)
@@ -112,7 +113,7 @@ EU <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus",
         "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia",
         "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland",
         "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
-data_for_month <- data.frame(data) %>% select(location, date, new_cases) %>% 
+data_for_month <- data.frame(data) %>% dplyr::select(location, date, new_cases) %>% 
   filter(location %in% EU)
 data_for_month$month <- floor_date(data_for_month$date, "month")
 data_for_month <- as.tibble(data_for_month) %>%
@@ -140,7 +141,7 @@ ggplot(data_for_month, aes(month, location)) +
 
 
 ```{r warning = FALSE, message = FALSE}
-library(plotly)
+#library(plotly)
 ggplot(data_agg) + 
   geom_point(aes(x = total_cases, y = gdp_per_capita, color = continent, 
                  size = population), alpha=0.5) +
@@ -258,7 +259,7 @@ anim_save("gifplot.gif")
 
 for maps:
   
-  ```{r warning = FALSE}
+```{r warning = FALSE}
 library(tidyverse)
 library(rnaturalearth)
 library(cowplot)
@@ -282,7 +283,7 @@ library(viridis)
 ```{r}
 world <- ne_countries(scale = "medium", returnclass = "sf")
 world <- data.frame(world)
-world <- world %>% rename(location = name)
+world <- world %>% dplyr::rename(location = name)
 head(world)
 head(data_agg)
 #unique(world$name)
@@ -308,6 +309,7 @@ head(world)
 
 ```{r}
 datacov <- read_csv("time_series_covid19_confirmed_global.csv")
+#datacove <- read_csv("https://raw.githubusercontent.com/LashaGoch/Visualizations-in-R/main/Covid/time_series_covid19_confirmed_global.csv?token=ANWKYHVL5ZI2CLRONZEAV2TADRE7O")
 head(datacov)
 ```
 
@@ -339,11 +341,11 @@ ggplot() +
 
 
 ```{r}
-#remotes::install_github("GuangchuangYu/nCov2019")
+remotes::install_github("GuangchuangYu/nCov2019")
 #source: https://github.com/GuangchuangYu/shadowtext/blob/master/R/geom-shadowtext.R
-# source: https://github.com/GuangchuangYu/nCov2019
+#source: https://github.com/GuangchuangYu/nCov2019
 library('remotes')
-#remotes::install_github("GuangchuangYu/nCov2019", dependencies = TRUE)
+remotes::install_github("GuangchuangYu/nCov2019", dependencies = TRUE)
 library('nCov2019')
 library(ggplot2)
 y <- load_nCov2019(lang = 'en')
@@ -618,7 +620,7 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 
 
-```{r chunck}
+```{r}
 
 
 library(ggplot2)
@@ -651,7 +653,7 @@ head(df)
 
 ```
 
-```{r chumck}
+```{r}
 
 
 #plot<- df2 %>%
@@ -665,14 +667,13 @@ colnames(currency_vs_country)[1]<-"Country"
 temp1<- merge(x=data_sel, y=currency_vs_country, by.x = "location", by.y = "Country" , all.x = TRUE)
 temp2<-merge(x=temp1, y=df2, by.x= c("Code","date"), by.y=c("Currency", "Date"), all.x = TRUE)
 temp2 <- temp2[complete.cases(temp2), ]
-temp2 <- temp2[temp2$`Exchange rate` < 100,]
+temp2 <- temp2[temp2$Exchange_rate < 100,]
 
 
 temp3 <- temp2 %>%
-    group_by(date, continent) %>%
-    dplyr::summarize(Mean_ex = mean(Exchange_rate, na.rm=TRUE),  sum_cases_pm= sum(total_cases_per_million, na.rm = TRUE))
+    group_by(date, continent) %>% dplyr::summarize(Mean_ex = mean(Exchange_rate, na.rm=TRUE),  sum_cases_pm= sum(total_cases_per_million, na.rm = TRUE))
 #temp4 <- melt(temp3, measure.vars =c("Mean_ex", "Mean_ex"))
-data_sub2 <- temp3 %>% filter(continent %in% c("africa", "Asia", "Europe", "North America", 
+data_sub2 <- temp3 %>% filter(continent %in% c("Africa", "Asia", "Europe", "North America", 
     "South America", "Oceania"))
 #data_sub2 <- temp3 %>% filter(continent %in% c( "Europe"))
 
@@ -681,7 +682,7 @@ data_sub2 <- temp3 %>% filter(continent %in% c("africa", "Asia", "Europe", "Nort
 head(data_sub2)
 ```
 
-```{r chunk}
+```{r}
 library(hrbrthemes)
 library(viridis)
 library(ggplot2)
@@ -730,7 +731,7 @@ plot2
 
 ```
 
-```{r chunk}
+```{r}
 # Correlation matrix
 library(treemap)
 #devtools::install_github("timelyportfolio/d3treeR")
@@ -758,7 +759,7 @@ inter
 
 ```
 
-```{r chunck}
+```{r, warning=FALSE}
 
 library(broom.mixed)
 library(jtools)
@@ -785,13 +786,13 @@ reg_df$date<-as.character(reg_df$date)
 
 
 
-Reg <- lm(formula = Norm ~ . , data = reg_df, INtercept =FALSE)
+Reg <- lm(formula = Norm ~ . , data = reg_df, intercept =FALSE)
 Reg2 <- lm(formula = Norm ~ Norm_cases , data = reg_df, intercept =FALSE)
-Reg2$pred
+#Reg2$pred
 summ(Reg , exp = TRUE)
-plot_summs(Reg)
+#plot_summs(Reg)
 
-coefplot(Reg,  col.pts="red",  intercept=TRUE)
+#coefplot(Reg,  col.pts="red",  intercept=TRUE)
 
 
 
