@@ -75,68 +75,83 @@ knitr::kable(data[1:5,])
 ## 4. Aggregating Data
 
 ```{r}
-temp <- data.frame(data) %>% select(continent, location, gdp_per_capita,
+library(dplyr)
+temp <- data.frame(data) %>% dplyr::select(location, continent, gdp_per_capita,
                                     population_density, total_cases, 
                                     total_cases_per_million, population)
+
+temp[is.na(temp)] <- 0
+
 temp <- subset(temp, location!="World" & location!="International")
-data_agg <- aggregate(temp, list(temp$location, temp$continent, 
-                                 temp$gdp_per_capita, temp$population_density), max)
-
-data_agg$Group.1 <- NULL
-data_agg$Group.2 <- NULL
-data_agg$Group.3 <- NULL
-data_agg$Group.4 <- NULL
-
-#head(data_agg)
-knitr::kable(data_agg[data_agg$location == "Zimbabwe",], capture = "Checking record for Zimbabwe")
+data_agg <- temp %>% group_by(location, continent) %>% 
+  summarise(total_cases = max(total_cases), gdp_per_capita = max(gdp_per_capita),
+            population_density = max(population_density), 
+            total_cases_per_million = max(total_cases_per_million),
+            population = max(population))
 
 
 knitr::kable(data_agg[1:10,], capture = "Dataset first 10 records")
 
 ```
+## 5. Worldmap
+
+
+
 
 ## 5. Distributions
 
 ```{r}
 library(ggplot2)
-data_agg %>%
-  ggplot(aes(x = gdp_per_capita)) + 
-  geom_histogram(aes(y = ..density..), 
-                 colour = "black", 
-                 fill = "white") +
-  geom_density(alpha = .2, fill = "#AB4534") +
-  labs(title = 'Distribution of GDP per capita')
+library(scales)
+
+ggplot(data_agg, aes(x=gdp_per_capita))+
+  geom_histogram(aes(y=..density..), colour="black", fill="white") +
+  geom_density(color="darkblue", fill="#E69F00", alpha=0.7) +
+  labs(title = 'What is the Distribution of GDP per capita?',
+       subtitle = 'Right skewed distribution, many poor countries') + 
+  theme(plot.title = element_text(size = 16, color = "#0B8389", face = "bold"),
+        plot.subtitle = element_text(size = 11)) +
+   scale_y_continuous(labels = comma) + 
+    scale_x_continuous(labels = comma)
 
 
 ```
 
 
 ```{r}
-
+library(DT)
 data_agg$gdp_per_capita_group <- cut(data_agg$gdp_per_capita, breaks=c(0,7000,20000,40000), include.lowest = FALSE, dig.lab = 6)
 
-data_for_dist <- data_agg %>%
-  count(continent, gdp_per_capita_group)
 
-data_for_dist <-  na.omit(data_for_dist)
+data_for_dist.a <- data_agg %>% group_by(continent) %>% dplyr::count(gdp_per_capita_group)
+data_for_dist.a <-  na.omit(data_for_dist.a)
 
-datatable(head(data_for_dist), caption = 'Table 1: This is a simple caption for the table.')
+datatable(head(data_for_dist.a), caption = 'Distribution of countries by GDP_per_capita groups & continents')
 
+wrapper <- function(x, ...) 
+{
+  paste(strwrap(x, ...), collapse = "\n")
+}
 
-
-ggplot(data_for_dist, aes(x = continent, y = gdp_per_capita_group)) + 
+ggplot(data_for_dist.a, aes(x = continent, y = gdp_per_capita_group)) + 
   geom_tile(aes(fill = n), color = 'white', show.legend = F) +
   theme_minimal() + 
   geom_text(aes(label = n), size = 5, fontface = 'bold', color = 'white') +
-  labs(title = 'Distribution of countries by GDP_per_capita groups & continents') +
   scale_fill_gradient(low = '#6bb0c4', high = '#dd5f64') +
-  theme(panel.grid = element_blank())
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(size = 16, color = "#0B8389", face = "bold"),
+        plot.subtitle = element_text(size = 11),
+        axis.text.y = element_text(size = 10),
+        axis.text.x = element_text(size = 10)) +
+  ggtitle(wrapper("Distribution of countries by GDP_per_capita groups & continents", width = 60)) +
+  labs(subtitle = wrapper('Moldova in Europe and Bolivia in South America only countries with less than $7,000 GDP_per_capita', width=80))
+
 
 
 ```
 
 ```{r}
-data_sel <- data.frame(data) %>% select(continent, location, date, new_cases, 
+data_sel <- data.frame(data) %>% dplyr::select(continent, location, date, new_cases, 
                                         new_deaths, total_cases, total_deaths,
                                         total_cases_per_million, population)
 
@@ -151,24 +166,34 @@ datatable(head(data_sel), caption = 'Table 1: This is a simple caption for the t
 
 ```{r warning = FALSE, message = FALSE}
 library(plotly)
+library(ggrepel)
 
-ggplot(data_agg) + 
-  geom_point(aes(x = total_cases, y = gdp_per_capita, color = continent, 
-                 size = population), alpha=0.5) +
+data_agg$population_mln <- as.numeric(data_agg$population/1000000)
+ggplot(data_agg, aes(x = total_cases, y = gdp_per_capita, color = continent, 
+                 size = population_mln)) +
+  geom_point(alpha=0.5) +
     labs(x = 'Total Cases',
        y = 'GDP per capita',
-       title = "Covid total cases vs GDP per capita",
-       caption = 'source: ') +
+       title = "Where are European countries on the scatterplot?",
+       subtitle = "Just on the top-right, behind the US!",
+       caption = 'Date: 2021-Jan-29') +
   theme(panel.background = element_rect(fill = 'white', color = 'white', size = 1.2),
         plot.background = element_rect(fill = 'white'),
-        plot.title = element_text(hjust = 0.5, size =16, face='bold', 
-                                  color = 'brown'),
-        plot.caption = element_text(face = 'italic', color = 'brown'),
+        plot.title = element_text(size =16, face='bold', 
+                                  color = '#0B8389'),
+        plot.subtitle = element_text(size = 11),
+        plot.caption = element_text(face = 'italic', size = 8),
         panel.grid.major = element_line(linetype = 'dashed', size =0.1),
-        panel.grid.minor = element_blank()) +
-  scale_x_continuous(trans = "log2")+
-  scale_y_continuous(trans = "log2") + 
-  scale_size(range = c(.1, 24), name="Population (M)")
+        panel.grid.minor = element_blank(),
+        axis.text.y = element_text(size = 10),
+        axis.text.x = element_text(size = 10),
+        legend.position = "bottom") +
+  scale_x_continuous(trans = "log10", labels = comma)+
+  scale_y_continuous(trans = "log10", labels = comma) + 
+  scale_size(range = c(.1, 20), name="Population [mln]") +
+  guides(color = guide_legend(override.aes = list(size = 6))) 
+
+
 
 #ggplotly(a)
 ```
@@ -187,7 +212,7 @@ EU <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus",
         "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
 
 
-data_for_month <- data.frame(data) %>% select(location, date, new_cases) %>% 
+data_for_month <- data.frame(data) %>% dplyr::select(location, date, new_cases) %>% 
   filter(location %in% EU)
 
 data_for_month$month <- floor_date(data_for_month$date, "month")
@@ -195,25 +220,27 @@ data_for_month$month <- floor_date(data_for_month$date, "month")
 data_for_month <- as.tibble(data_for_month) %>%
   group_by(location, month) %>%
   summarize(new_cases = as.numeric(sum(new_cases))) 
-  #mutate(new_cases = scale(new_cases))
-data_for_month$month<-as.character(data_for_month$month)
 
+data_for_month$month<-as.character(data_for_month$month)
+data_for_month$new_cases_1000 <- as.numeric(data_for_month$new_cases/1000)
 ggplot(data_for_month, aes(month, location)) + 
-  geom_tile(aes(fill = new_cases), colour = "white") + 
+  geom_tile(aes(fill = new_cases_1000), colour = "white") + 
+  labs(title = "Which month had the biggest amount of new cases?",
+       subtitle = "First wave in Mar 2020 and the second wave in Sep-Oct 2020!",
+       caption = 'Date: 2021-Jan-29') +
   scale_x_discrete("", expand = c(0, 0)) + 
   scale_y_discrete("", expand = c(0, 0)) + 
-  #scale_fill_gradient(low="orange", high = "red")+
-  #scale_fill_distiller(palette = "RdPu")+
-  #theme_grey(base_size = 9) + 
-  scale_fill_gradient2(low = "#006400", mid = "#f2f6c3", high = "#cd0000", 
+  scale_fill_gradient2(name= "New Cases 000'",low = "#006400", mid = "#f2f6c3", high = "#cd0000", 
                        midpoint = 0.5, na.value = "white")+
   theme(legend.position = "right",
         axis.ticks = element_blank(), 
         axis.text.x = element_text(angle = 90, hjust = 0.5),
         axis.text.y = element_text(size = 10),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+         plot.title = element_text(size =16, face='bold', 
+                                  color = '#0B8389'),
+        plot.subtitle = element_text(size = 11))
 
-#ggplotly(c, tooltip="text")
 
 ```
 
@@ -225,38 +252,73 @@ ggplot(data_for_month, aes(month, location)) +
 
 
 ```{r warning = FALSE}
-
-ggplot(data=data_agg, aes(x= total_cases, y = continent, fill=continent)) +
-  geom_bar(width = 0.5, stat = 'identity') +
-  labs(title = 'Total cases by continent.',
-       subtitle = 'subtitle') + 
-  xlab('Total Cases') +
-  ylab('Continents') +
-  theme(legend.position = "none",
-        text = element_text(size=8),
-        axis.text.y = element_text(hjust=1)) +
-  geom_text(aes(label = total_cases), vjust =0.5, hjust=-0.03, 
-            color = 'darkgreen', size = 3.5) +# since the bars are horizontal I put
-  # the labels next to the bars
-  theme(plot.title = element_text(size =12, face='bold', 
-                                  color = 'brown'))
+new_data_agg <- data_agg[order(-data_agg$total_cases),]
+new_data_agg$total_cases_mln <- as.numeric(new_data_agg$total_cases/1000000)
+new_data_agg <- new_data_agg[1:15,]
+ggplot(data=new_data_agg, aes(x= total_cases_mln, y = reorder(location, total_cases_mln), fill=continent)) +
+  geom_bar(width = 0.8, stat = 'identity') +
+  labs(title = 'Which are top 10 countries by Total Cases?',
+       subtitle = "USA, India & Brazil combines 45% of World's Total Cases",
+       caption = 'Date: 2021-Jan-29') + 
+  xlab('Total Cases [mln]') +
+  ylab('Countries') +
+  theme(legend.position = "right",
+        text = element_text(size=12),
+        axis.text.y = element_text(hjust=1),
+        plot.caption = element_text(face = 'italic', size = 8),
+        plot.title = element_text(size =16, face='bold', 
+                                  color = '#0B8389'),
+        plot.subtitle = element_text(size = 11)) +
+  scale_fill_discrete(name = "Continent") +
+  geom_text(aes(label = round(total_cases_mln,3)), vjust =0.5, hjust=-0.03, 
+            color = 'darkgreen', size = 3.5) +
+  scale_fill_brewer(palette="Paired")
 
 ```
 
 
 ```{r}
 library(ggiraph)
+library(ggplot2)
+library(ggrepel)
 # Basic plot: 
-g <- ggplot(data_agg, 
-            aes(x = gdp_per_capita, y = total_cases_per_million, color =population_density))
+data_agg_n <- data_agg %>% filter(gdp_per_capita > 10 & total_cases_per_million > 10)
+
+g <- ggplot(data_agg_n, 
+            aes(x = gdp_per_capita, y = total_cases_per_million, color = continent)) +
+ geom_text_repel(
+   data = subset(data_agg_n, gdp_per_capita > 72000),
+   aes(label = location),
+   size  = 5,
+   box.padding = unit(0.35, "lines"),
+    point.padding = unit(0.3, "lines"), 
+   nudge_x = 0.8, nudge_y = 1.5, direction = "y", hjust = "left",
+   segment.curvature = -0.1,
+    segment.ncp = 3,
+    segment.angle = 20)+
+  geom_point() +
+  labs(title = 'How is covid situation in rich countries?',
+       subtitle = "Europe cluster on the right-top while Africa cluster on the left bottom",
+       caption = 'Date: 2021-Jan-29') +
+  scale_x_continuous(trans = "log10", expand = expansion(mult = 0.5), labels = comma) +
+  scale_y_continuous(trans = "log10", labels = comma) +
+  theme(legend.position = "bottom",
+        text = element_text(size=12),
+        plot.caption = element_text(face = 'italic', size = 8),
+        plot.title = element_text(size =16, face='bold', 
+                                  color = '#0B8389'),
+        plot.subtitle = element_text(size = 11)) +
+        coord_cartesian(clip = "off") +
+  guides(color = guide_legend(override.aes = list(size = 6)))
 
 # Interactiveness:
-g_int <- g + geom_point_interactive(aes(tooltip = location), size = 2)
+g_int <- g + geom_point_interactive(aes(tooltip = location), size = 3)
 
 # Wyświetlenie
 ggiraph(code = print(g_int))
 
-
+  #geom_label_repel(aes(gdp_per_capita, total_cases_per_million, fill=continent,
+   #                   label = location))
 
 ```
 
@@ -264,30 +326,24 @@ ggiraph(code = print(g_int))
 
 ```{r warning=FALSE}
 ggplot(data_agg, aes(x = gdp_per_capita, fill = continent)) + 
-  geom_histogram(data = data_agg[,-5], fill = "grey", alpha = .5, bins = 30) + 
-  geom_histogram(colour = "black", bins = 30) +
-  facet_wrap(~ continent) + guides(fill = FALSE) 
+  geom_histogram(data = data_agg[,-5], alpha = .5, bins = 30, colour = "black") + 
+   labs(title = 'Which continents have similar distribution of GDP_per_capita?',
+       subtitle = "Africa and Asia very much right-skewed",
+       caption = 'Date: 2021-Jan-29') +
+  facet_wrap(~ continent) + guides(fill = FALSE) + 
+  theme(axis.text.x = element_text(colour = "grey20", size = 10, 
+                                   angle = 90, hjust = 0.5, vjust = 0.5),
+        axis.text.y = element_text(colour = "grey20", size = 10),
+        text = element_text(size=12),
+        plot.caption = element_text(face = 'italic', size = 8),
+        plot.title = element_text(size =16, face='bold', 
+                                  color = '#0B8389'),
+        plot.subtitle = element_text(size = 11)) +
+  scale_y_continuous(labels = comma) + 
+    scale_x_continuous(labels = comma)
+
 
 #ggplotly(b)
-```
-
-```{r eval=FALSE}
-# library(gganimate)
-# library(gapminder)
-# start_pause <- 0
-# end_pause <- 0
-# 
-# ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) +
-#   geom_point(alpha = 0.7, show.legend = FALSE) +
-#   scale_colour_manual(values = country_colors) +
-#   scale_size(range = c(2, 12)) +
-#   scale_x_log10() +
-#   facet_wrap(~continent) +
-#   # Here comes the gganimate specific bits
-#   labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') +
-#   transition_time(year) +
-#   ease_aes('linear')
-
 ```
 
 
@@ -306,7 +362,7 @@ head(data_anim)
 #                                                 "Italy", "Spain", "Poland"))
 
 data_anim <- data_sel %>%
-  filter(continent %in% c("africa", "Asia", "Europe", "North America",
+  filter(continent %in% c("Africa", "Asia", "Europe", "North America",
                           "South America", "Oceania"))
 data_anim <- data_anim[complete.cases(data_anim),]
 gifplot <- ggplot(data_anim, aes(total_cases, total_deaths,
@@ -316,11 +372,19 @@ gifplot <- ggplot(data_anim, aes(total_cases, total_deaths,
   scale_x_log10() +
   facet_wrap(~continent) +
   # Here comes the gganimate specific bits
-  labs(title = 'Year: {frame_time}', x = 'Total Cases', y = 'Total Deaths') +
+  labs(title = 'How virus spread in each continent in 2020?', 
+       subtitle = 'Year: {frame_time}', x = 'Total Cases', y = 'Total Deaths') +
   transition_time(date) +
-  ease_aes('linear')
+  ease_aes('linear') +
+  shadow_wake(wake_length = 0.1, alpha = FALSE) + 
+  shadow_mark(alpha = 0.3, size = 0.5) + 
+  theme(text = element_text(size=12),
+        plot.title = element_text(size =16, face='bold', 
+                                  color = '#0B8389'),
+        plot.subtitle = element_text(size = 14))
+  
 
-animate(gifplot, duration = 5, fps = 20, renderer = gifski_renderer())
+gganimate::animate(gifplot, duration = 15, fps = 20, renderer = gifski_renderer())
 anim_save("gifplot.gif")
 
 ```
@@ -329,9 +393,8 @@ anim_save("gifplot.gif")
 
 
 
-for maps:
 
-```{r warning = FALSE}
+```{r}
 library(tidyverse)
 library(rnaturalearth)
 library(cowplot)
@@ -342,82 +405,36 @@ library("rnaturalearth")
 library("rnaturalearthdata")
 library("sf")
 library("rgeos")
-
-###
 library(tidyverse)
 library(ggplot2)
 library(readr)
 library(maps)
 library(viridis)
+library(plotly)
 
-```
-
-
-
-```{r}
-world <- ne_countries(scale = "medium", returnclass = "sf")
-world <- data.frame(world)
-world <- world %>% rename(location = name)
-head(world)
-head(data_agg)
-#unique(world$name)
-#unique(data_sel$location)
-
-```
-```{r}
-# Default theme:
 theme_set(theme_bw())
 
-world <- merge(x=world, y=data_agg, by="location", all.x = TRUE)
-head(world)
+world <- ne_countries(scale = "medium", returnclass = "sf")
+world <- data.frame(world)
+world <- world %>% dplyr::rename(location = name)
 
-```
+worldmap <- world %>% dplyr::select(location, adm0_a3) 
+worldmap1 <- merge(x=worldmap, y=data_agg, by="location", all.x = TRUE)
+fig <- plot_ly(worldmap1, type='choropleth', locations=worldmap1$adm0_a3, z=worldmap1$gdp_per_capita, colors="PuBuGn" ,
+               hoverinfo = 'text',
+        text = ~paste('</br> Country: ', worldmap1$location,
+                      '</br> GDP_per_capita: ', round(worldmap1$gdp_per_capita,0),
+                      '</br> Total Cases: ', worldmap1$total_cases,
+                      '</br> Cases per mln: ', round(worldmap1$total_cases_per_million,3),
+                      '</br> Population mln: ', round(worldmap1$population_mln,3))) %>% 
+  layout(title = 'All information about Countries, coloured according to GDP_per_capita', size = 16,
+         face = 'bold', color= '#0B8389', 
+         legend=list(title=list(text='<b> GDP_per_capita </b>'), orientation = 'h'))
 
-```{r}
-# ggplot(data = world) +
-#   geom_sf(aes(fill = income_grp )) +
-#   coord_sf(expand = FALSE) +
-#   # geom_sf(aes(fill =  pop_est)) +
-#   scale_fill_brewer(palette = 'YlOrBr') +
-#   # scale_fill_viridis_c(option = "plasma", trans = "sqrt", guide = guide_colorbar(barwidth = 30), name = NULL) +
-#   theme(legend.position = 'right') 
-#   # theme(legend.position = 'bottom')
+fig
+#library(htmlwidgets)
 
-
-```
-
-```{r}
-
-datacov <- read_csv("time_series_covid19_confirmed_global.csv")
-
-head(datacov)
-```
-
-
-
-```{r warninig = FALSE}
-
-world <- map_data("world")
-
-# cutoffs based on the number of cases
-mybreaks <- c(1, 20, 100, 1000, 50000)
-
-ggplot() +
- geom_polygon(data = world, aes(x=long, y = lat, group = group), fill="grey", alpha=0.3) +
- geom_point(data=datacov, aes(x=Long, y=Lat, size=`3/3/20`, color=`3/3/20`),stroke=F, alpha=0.7) +
- scale_size_continuous(name="Cases", trans="log", range=c(1,7),breaks=mybreaks, labels = c("1-19", "20-99", "100-999", "1,000-49,999", "50,000+")) +
-    # scale_alpha_continuous(name="Cases", trans="log", range=c(0.1, 0.9),breaks=mybreaks) +
-    scale_color_viridis_c(option="inferno",name="Cases", trans="log",breaks=mybreaks, labels = c("1-19", "20-99", "100-999", "1,000-49,999", "50,000+")) +
-    theme_void() + 
-    guides( colour = guide_legend()) +
-    labs(caption = "Data Repository provided by Johns Hopkins CSSE. Visualization by DataScience+ ") +
-    theme(
-      legend.position = "bottom",
-      text = element_text(color = "#22211d"),
-      plot.background = element_rect(fill = "#ffffff", color = NA), 
-      panel.background = element_rect(fill = "#ffffff", color = NA), 
-      legend.background = element_rect(fill = "#ffffff", color = NA)
-    )
+#saveWidget(fig, "index.html")
 
 ```
 
@@ -425,292 +442,145 @@ ggplot() +
 
 
 ```{r}
-#remotes::install_github("GuangchuangYu/nCov2019")
-#source: https://github.com/GuangchuangYu/shadowtext/blob/master/R/geom-shadowtext.R
-# source: https://github.com/GuangchuangYu/nCov2019
-
-library('remotes')
-#remotes::install_github("GuangchuangYu/nCov2019", dependencies = TRUE)
-library('nCov2019')
-
 library(ggplot2)
-y <- load_nCov2019(lang = 'en')
-d <- y['global']
-max_time <- max(d$time)
-min_time <- max_time - 7
-d <- na.omit(d[d$time >= min_time & d$time <= max_time,])
-dd <- d[d$time == max(d$time, na.rm = TRUE),]
-d$country <- factor(d$country, 
-  levels=unique(dd$country[order(dd$cum_confirm)]))
-breaks = c(10, 100, 1000, 10000)
-ggplot(d, aes(time, country)) + 
-  geom_tile(aes(fill = cum_confirm), color = 'black') + 
-  scale_fill_viridis_c(trans = 'log', breaks = breaks, 
-  labels = breaks) + 
-  xlab(NULL) + ylab(NULL) +
-  scale_x_date(date_labels = "%Y-%m-%d") + theme_minimal()
-
+library(ggcorrplot)
+library(tidyverse)
+library(lubridate) 
+library(ggplot2)
+library(readxl)
+library(gganimate)
+library(ggthemes)
+library(MASS) 
+library(reshape2) 
+library(reshape) 
+library(DescTools)
+library(dplyr)
+library(stats)
+exchange_rate_euro <- read.csv("eurofxref-hist.csv", stringsAsFactors=FALSE)
+exchange_rate_euro <- exchange_rate_euro[,c(1:42)]
+exchange_rate_euro[,c(2:42)] <- lapply(exchange_rate_euro[,c(2:42)],as.numeric)
+exchange_rate_euro[is.na(exchange_rate_euro)] = 0
+exchange_rate_euro[,1] <- as.Date(exchange_rate_euro[,1], "%Y-%m-%d")
+exchange_rate_euro <- exchange_rate_euro %>% filter( Date >= as.Date("2020-01-01"))
+df2 <- melt(exchange_rate_euro, id = c("Date")) 
+colnames(df2)[2:3]<-c("Currency", "Exchange_rate")
+df <- df2[df2$Currency %in% c("USD"),]
+head(df)
 ```
 
 ```{r}
-
-# require(nCov2019)
-# y <- load_nCov2019(lang = 'en', source='github')
-# d = y['global']
-# 
-# 
-# require(dplyr)
-# dd <- filter(d, time == time(y)) %>% 
-#     arrange(desc(cum_confirm)) 
-# 
-# dd = dd[1:40, ]
-# dd$country = factor(dd$country, levels=dd$country)
-# 
-# dd$angle = 1:40 * 360/40
-# require(ggplot2)
-# p <- ggplot(dd, aes(country, cum_confirm, fill=cum_confirm)) + 
-#     geom_col(width=1, color='grey90') + 
-#     geom_col(aes(y=I(5)), width=1, fill='grey90', alpha = .2) +       
-#     geom_col(aes(y=I(3)), width=1, fill='grey90', alpha = .2) +    
-#     geom_col(aes(y=I(2)), width=1, fill = "white") +
-#     scale_y_log10() + 
-#     scale_fill_gradientn(colors=c("darkgreen", "green", "orange", "firebrick","red"), trans="log") + 
-#     geom_text(aes(label=paste(country, cum_confirm, sep="\n"), 
-#                   y = cum_confirm *.8, angle=angle), 
-#             data=function(d) d[d$cum_confirm > 700,], 
-#             size=3, color = "white", fontface="bold", vjust=1)  + 
-#      geom_text(aes(label=paste0(cum_confirm, " cases ", country), 
-#                   y = max(cum_confirm) * 2, angle=angle+90), 
-#             data=function(d) d[d$cum_confirm < 700,], 
-#             size=3, vjust=0) + 
-#     coord_polar(direction=-1) + 
-#     theme_void() + 
-#     theme(legend.position="none") +
-#     ggtitle("COVID19 global trend", time(y))
-# 
-# print(p)
+#plot<- df2 %>%
+#  ggplot( aes(x=Date, y=Exchange_rate,color = Currency)) +
+#    geom_line()
+#plot
+currency_vs_country <- read.csv("tableconvert_csv_9gbdx9.csv")
+colnames(currency_vs_country)[1]<-"Country"
+temp1<- merge(x=data_sel, y=currency_vs_country, by.x = "location", by.y = "Country" , all.x = TRUE)
+temp2<-merge(x=temp1, y=df2, by.x= c("Code","date"), by.y=c("Currency", "Date"), all.x = TRUE)
+temp2 <- temp2[complete.cases(temp2), ]
+temp2 <- temp2[temp2$Exchange_rate < 100,]
+temp3 <- temp2 %>%
+    group_by(date, continent) %>% dplyr::summarize(Mean_ex = mean(Exchange_rate, na.rm=TRUE),  sum_cases_pm= sum(total_cases_per_million, na.rm = TRUE))
+#temp4 <- melt(temp3, measure.vars =c("Mean_ex", "Mean_ex"))
+data_sub2 <- temp3 %>% filter(continent %in% c("Africa", "Asia", "Europe", "North America", 
+    "South America", "Oceania"))
+#data_sub2 <- temp3 %>% filter(continent %in% c( "Europe"))
+#data_sub2 <- data_sub2[data_sub2$Mean < 100,]
+head(data_sub2)
 ```
 
 ```{r}
+library(hrbrthemes)
+library(viridis)
+library(ggplot2)
+library(gganimate)
+library(babynames)
+plot1 <- data_sub2 %>%
+  ggplot( aes(x=date, y=`Mean_ex`, group=continent, color=continent), show.Legend =FALSE) +
+    geom_line() +
+    geom_point() +
+    scale_color_viridis(discrete = TRUE) +
+    ggtitle("Exchange Rate Trend") +
+    theme_ipsum() +
+    ylab("Exchnage Rate") +
+    xlab("Date") +
+    transition_reveal(date)
+plot1 
+plot2 <- data_sub2 %>%
+  ggplot( aes(x=date, y=sum_cases_pm, group=continent, color=continent), show.Legend =FALSE) +
+    geom_line() +
+    geom_point() +
+    scale_color_viridis(discrete = TRUE) +
+    ggtitle("Covid Cases Trend") +
+    theme_ipsum() +
+    ylab("Covid Cases") +
+    xlab("Date") +
+    transition_reveal(date)
+plot2
 
-# library('maps')
-# x = world
-# plot(x)
+
+
+#gganimate::animate(gifplot, duration = 10, fps = 20, renderer = gifski_renderer())
+anim_save("plot1.gif")
+anim_save("plot2.gif")
+
+```
+
+![](plot1.gif)
+
+![](plot2.gif)
+`
+
+
+
+```{r, warning=FALSE, eval=FALSE}
+library(broom.mixed)
+library(jtools)
+library(arm)
+library(gganimate)
+dat <- data [,c("continent",  "date","location",
+                                        "total_cases_per_million", "population", "gdp_per_capita", "stringency_index", "median_age","human_development_index")]
+join1<- merge(x=dat, y=currency_vs_country, by.x = "location", by.y = "Country" , all.x = TRUE)
+join2<-merge(x=join1, y=df2, by.x= c("Code","date"), by.y=c("Currency", "Date"), all.x = TRUE)
+join2 <- join2[complete.cases(join2), ]
+head(join2)
+join2 <- join2 %>% group_by(continent, location) %>% mutate(Norm = Exchange_rate/max(Exchange_rate))
+reg_df <- join2 %>% group_by(continent, location) %>% mutate(Norm_cases =total_cases_per_million/max(total_cases_per_million))
+reg_df <- reg_df [,!(colnames(reg_df) %in% c("CountryCode","Code","location","total_cases_per_million"))]
+reg_df <- na.omit(reg_df)
+reg_df$date<-as.character(reg_df$date)
+#reg_df <- reg_df [,c("date","location", "continent", "Norm","Norm_cases")]
+Reg <- lm(formula = Norm ~ . , data = reg_df, intercept =FALSE)
+Reg2 <- lm(formula = Norm ~ Norm_cases , data = reg_df, intercept =FALSE)
+#Reg2$pred
+summ(Reg , exp = TRUE)
+#plot_summs(Reg)
+#coefplot(Reg,  col.pts="red",  intercept=TRUE)
+check <- data.frame(summary(Reg)$coef[summary(Reg)$coef[,4] <= .001, 4])
+check <- cbind(Variables = rownames(check), check)
+rownames(check) <- 1:nrow(check)
+colnames(check)[2] <- "P_Value"
+check <- na.omit(check)
+check <-check[order(check$P_Value),]
+plot3 <- ggplot(check, aes(Variables, P_Value, fill = P_Value)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Reds", direction = 1) +
+  geom_text(aes(label=P_Value)) +
+  theme_minimal() +
+  coord_flip() +
+  theme(
+    panel.grid = element_blank(),
+    panel.grid.major.y = element_line(color = "white"),
+    panel.ontop = TRUE
+  ) + transition_states(Variables, wrap = FALSE) +
+  shadow_mark() +
+  enter_grow() +
+  enter_fade()
+plot3
+
+anim_save("plot3.gif")
 
 ```
 
 
-```{r cars, echo=FALSE, eval = FALSE}
-
-
-#OECD <- c("Austria", "Australia", "Belgium", "Canada", "Chile", "Colombia", 
-#          "Czech Republic", "Denmark", "Estonia", "Finland", "France", "Germany", 
-#          "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Japan", "Korea", 
-#          "Latvia", "Lithuania", "Luxembourg", "Mexico", "Netherlands", "New Zealand", 
-#          "Norway", "Poland", "Portugal", "Slovakia", "Slovenia", "Spain", 
-#          "Sweden", "Switzerland", "Turkey", "United Kingdom", "United States")
-
-#head(OECD)
-#data$OECD <- ifelse(data$location %in% OECD, 1, 0)
-
-#data <- data.frame(data)
-
-# table(data$OECD)
-# 
-# glimpse(data)
-# summary(data)
-# 
-# hist(data$OECD)
-# 
-# EU <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", 
-#         "Czech Republic", "Denmark", "Estonia", "Finland", "France", 
-#         "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", 
-#         "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", 
-#         "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
-# 
-# data$EU <- ifelse(data$location %in% EU, 1, 0)
-# head(data$EU)
-# 
-# hist(data$EU)
-# 
-# 
-# 
-# p2 <- ggplot(movies, aes(x = rank, # Sort by rank on the horizontal axis
-#                          y = p10*votes/1000, # On the vertical axis we put the total number of "10"s
-#                          color = (year>2000))) + # mark XXI century with different color
-#   labs(x = "IMDB Rank",
-#        y = "Total number of '10's",
-#        title = "IMDB Rank vs Total Number of '10's",
-#        caption = 'source: www.imdb.com') +
-#   theme(panel.background = element_rect(fill = 'grey', color = 'white', size = 1.2),
-#         plot.background = element_rect(fill = 'grey'),
-#         plot.title = element_text(hjust = 0.5, size =16, face='bold', 
-#                                   color = 'brown'),
-#         plot.caption = element_text(face = 'italic', color = 'brown'),
-#         panel.grid.major = element_line(linetype = 'dashed', size =0.1),
-#         panel.grid.minor = element_blank()) +
-#   
-#   geom_point() 
-# 
-# p2
-# 
-# 
-# p3 + guides(color =  guide_legend(title = "Okres",
-#                                   title.position = "left",
-#                                   title.hjust = 0.5,
-#                                   title.theme = element_text(size = 15, # font size
-#                                                              face = "bold", # font sub-type (bold)
-#                                                              colour = "blue", # font color
-#                                                              angle = 90 ))) # rotate font box
-# 
-# p4 + guides(alpha=guide_legend(title = "Median Prices $K",
-#                                title.position = "right",
-#                                title.hjust = 0.5,
-#                                title.theme = element_text(size = 10, # font size
-#                                                           face = "bold", # font sub-type (bold)
-#                                                           colour = "brown", # font color
-#                                                           angle = 90 ),
-#                                override.aes = list(shape = 15, size = 8),
-#                                reverse = TRUE)) +
-#   labs(title = "Mean No. of rooms vs % of lower class ppl") +
-#   theme(plot.title = element_text(size =12, face='bold', 
-#                                   color = 'brown'))
-# 
-# p1 <- p + 
-#   labs(x = "Year", y = "Budget", title = "Budget vs Year of production") + 
-#   geom_point() + 
-#   scale_y_continuous(name = "Budged ['000 of USD]",
-#                      breaks = seq(0,200000000,by = 10000000), # use function seq() - operate on original scale values
-#                      labels = format(seq(0,200000,by=10000), big.mark = " "),
-#                      limits = c(0, 100000000)) # put scaled labels with space as bigval separator
-# p1
-# 
-# p1 + geom_point(aes(color = rating)) + 
-#   scale_color_gradient2(low = 'red', mid = 'orange',   high="yellow", midpoint = mean(movies$rating))
-# 
-# p1 + theme(panel.background = element_rect(fill = 'grey', color = '#377EB8', size = 1.2),
-#            plot.background = element_rect(fill = 'grey'),
-#            plot.title = element_text(hjust = 0.5, size =16, face='bold', 
-#                                      color = 'red'),
-#            panel.grid.major = element_line(linetype = 'dashed', size =0.1),
-#            panel.grid.minor = element_blank(),
-#            legend.position = 'bottom',
-#            legend.background = element_rect(fill='grey', linetype = 'solid',
-#                                             colour = '#377EB8', size=1))
-# 
-# 
-# 
-# ggplot(data = rs, aes(x = Age)) +
-#   geom_bar(stat = 'count', fill = 'darkgreen', color = 'darkgreen',
-#            aes(y = ..count..)) +
-#   theme_minimal() +
-#   geom_text(aes(label = ..count..), stat = 'count', vjust = -.4)
-# 
-# # colors: "#999999", "#E69F00", "#56B4E9"
-# 
-# 
-# 
-# 
-# # Read data
-# hp <- read.csv2('happy2015.csv', header = TRUE, sep = ",", dec = ".") 
-# 
-# glimpse(hp)
-# 
-# # Group the data:
-# hp2 <- hp %>% 
-#   group_by(Region) %>% 
-#   dplyr::summarise(N = n(), Mean.happiness = round(mean(Happiness.Score),2))
-# 
-# hp2
-# 
-# # if we use this data for geom_bar it does not work:
-# 
-# ggplot(data=hp2, aes(x= Mean.happiness, y = Region, fill=Region)) +
-#   geom_bar(width = 0.5, stat = 'identity') +
-#   labs(title = 'Happiness AVG Score by Reg.',
-#        subtitle = '0 - not happy; 10 - very happy') + 
-#   xlab('Mean Happiness') +
-#   ylab('Region') +
-#   theme(legend.position = "none",
-#         text = element_text(size=8),
-#         axis.text.y = element_text(hjust=1)) +
-#   geom_text(aes(label = Mean.happiness), vjust =0.5, hjust=-0.03, 
-#             color = 'darkgreen', size = 3.5) +# since the bars are horizontal I put
-#   # the labels next to the bars
-#   theme(plot.title = element_text(size =12, face='bold', 
-#                                   color = 'brown'))
-# 
-# 
-# 
-# rs <- read.csv2('data/responses.csv', header = TRUE, sep = ",", dec = ".") 
-# glimpse(rs)
-# 
-# rs_2 <- rs %>% 
-#   dplyr::group_by(Fear.of.public.speaking, Gender) %>% 
-#   dplyr::summarise(number = length(Fear.of.public.speaking))
-# 
-# 
-# 
-# ggplot(data=rs_2, aes(x= factor(Fear.of.public.speaking),
-#                       y=number, fill=factor(Gender))) +
-#   geom_bar(width = 0.5, stat = 'identity', position="stack") +
-#   labs(title = 'People with Fear of Public Speaking',
-#        caption = '1 - not afraid; 5 - much afraid',
-#        x = 'Fear of Public Speaking',
-#        y = 'Number of people',
-#        fill = 'Gender') +
-#   scale_fill_manual(values = c('deepskyblue3', 'dodgerblue4')) +
-#   theme(legend.position = 'left', plot.title = element_text(size =12, face='bold', 
-#                                                             color = 'brown')) +
-#   geom_text(aes(label = number), position = 'stack',
-#             vjust =-0.5, hjust=0.5, size = 3.5) 
-# 
-# 
-# glimpse(rs)
-# 
-# 
-# rs_3 <- rs %>% 
-#   dplyr::group_by(Education, Entertainment.spending) %>% 
-#   dplyr::summarise(number = length(Education))
-# 
-# glimpse(rs_3)
-# 
-# ggplot(data=rs_3, aes(x= Education,
-#                       y=number, fill=factor(Entertainment.spending))) +
-#   geom_bar(width = 0.5, stat = 'identity', position="dodge") +
-#   labs(title = 'Attitude to savings vs the education level',
-#        Caption = '1 - low spending; 5 - high spending',
-#        x = 'Education level',
-#        y = 'Number of respondents') +
-#   scale_fill_manual(values = c('deepskyblue3', 'khaki', "#999999", "#E69F00", "#56B4E9")) +
-#   geom_text(aes(label = number), vjust = -.5, position = position_dodge(.5),
-#             size = 2.5) +
-#   theme(legend.position = 'left', text = element_text(size=8),
-#         plot.title = element_text(size =12, face='bold', 
-#                                   color = 'brown'),
-#         panel.background = element_rect(fill = 'grey', color = 'white', size = 1.2),
-#         plot.background = element_rect(fill = 'grey'),
-#         panel.grid= element_line(linetype = 'dashed', size =0.1)) +
-#   guides(fill=guide_legend(title = "Scale of Spending",
-#                            title.position = "left",
-#                            title.hjust = 0.5,
-#                            title.theme = element_text(size = 10, # font size
-#                                                       face = "bold", # font sub-type (bold)
-#                                                       colour = "brown", # font color
-#                                                       angle = 90 )))
-# 
-# 
-# 
-
-
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE, eval = FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+![](plot3.gif)
