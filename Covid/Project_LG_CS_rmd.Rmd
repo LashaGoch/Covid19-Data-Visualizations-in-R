@@ -26,7 +26,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-## 1. Libraries
 
 ```{r echo=FALSE, warning = FALSE, comment=FALSE}
 library(readr)
@@ -39,26 +38,42 @@ library(gapminder)
 library(DT)
 ```
 
-Unnecessary staff
+## 1. Introduction and Objectives
+
+In this project we will look at the Covid data from a different perspective. **We will analyze data with regards to world economy. We will look at different countries economic parameters and derive some insights.** Basically, we would like to answerd questions such as: which countries have more cases poor countries vs rich countries. We will also group countries by continent and look for patterns they may have. Also, we will show visualization that will tell story about covid and economy relationship. In the second part of the analysis, we will introduce foreign exchange rates and we will at it to derive insights. Our hypothesis is that, those countries who have more covid cases, their exchange rate should fall down and have some devaluation problems. We will also observe data for different continents and groups.  
 
 
 
+## 2. Data Source
 
-## 2. Data Load
+The data is located on GitHub and it is updated constantly by John Hopkins University. The data is directly sources from GitHub and we use live connecion. https://github.com/owid/covid-19-data/tree/master/public/data
+
+Information about Confirmed cases and deaths comes from the COVID-19 Data Repository by the **Center for Systems Science and Engineering (CSSE) at Johns Hopkins University (JHU).**
+
+Information about Hospitalizations and intensive care unit (ICU) admissions comes from the **European Centre for Disease Prevention and Control (ECDC)** for a select number of European countries; the government of the United Kingdom; the COVID Tracking Project for the United States; the COVID-19 Tracker for Canada. 
+
+Information about Testing for COVID-19 is collected by the **Our World in Data** team from official reports;
+
+Information about Vaccinations against COVID-19 is collected by the **Our World in Data** team from official reports.
+
+The benefit of data is that it is constantly updated.
 
 
-```{r warning = FALSE, echo=FALSE, comment=FALSE}
+```{r warning = FALSE, comment=FALSE}
 data <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv")
 
 ```
 
 ## 3. Data Description
 
+Data contains 67,439 rows and 59 variables. Data is increasing since an observation is about one country data per day. Therefore, each day the data points are increasing. 
+
 ```{r}
 glimpse(data)
 
 ```
 
+The datatable sample is shown below.
 
 ```{r}
 #data <- read.csv("owid-covid-data.csv", stringsAsFactors = F)
@@ -68,6 +83,8 @@ knitr::kable(data[1:5,])
 ```
 
 ## 4. Aggregating Data
+
+We will select only important colums such as `location`, `continent`, `gdp_per_capita`, `population_density`, `total_cases`, `total_cases_per_million`, `population`. This is to use wisely our computation memory and derive useful insights in our graphs. Next step is to remove *World* and *International* from the dataset since we will concentrace on countries and those files will be outliers in the graphs. 
 
 ```{r}
 library(dplyr)
@@ -88,12 +105,11 @@ data_agg <- temp %>% group_by(location, continent) %>%
 knitr::kable(data_agg[1:10,], capture = "Dataset first 10 records")
 
 ```
-## 5. Worldmap
-
-
 
 
 ## 5. Distributions
+
+Let's start out analysis with distributions. First of all, let's observe the distribution of the `GDP_per_capita`. On the graph we see that the distribution is skewed on the right. The majority of countries have less than 20.000 USD GDP per Capita. Which means that the world has much more poor countries than rich.
 
 ```{r}
 library(ggplot2)
@@ -111,6 +127,12 @@ ggplot(data_agg, aes(x=gdp_per_capita))+
 
 
 ```
+
+## 6. Grouping Countries by Income
+
+Let's group coutnries in three countries and observe how many countries we have in each group. We will use `GDP_per_capita` to define the groups rich, medium and poort countries. Countries between *0-7.000* USD `GDP_per_capita` we call this group "poor". The countries with `GDP_per_capita` between *7.000-20.000* USD, we call them "medium" income countries. And the thirds group is countries with `GDP_per_capita` more than *20.000* USD. 
+
+Looking at the graph we see that 40 countries in Africa are in poor countries categories. We definitely do not want the world to have that many poor countries and especially in one continent. The Europe is the continent with many rich countries and only one poor country which is *Moldova*. North and South America have many Medium income countries. However, our desire is to have evenly distributed wealth in every continent and countries. 
 
 
 ```{r}
@@ -145,9 +167,9 @@ ggplot(data_for_dist.a, aes(x = continent, y = gdp_per_capita_group)) +
 
 ```
 
+## 7.  Rich vs Poor Countries & Covid Cases
 
-
-
+Looking at the below graph we want to answer question, *Do rich countries have more covid cases?* Graph answers that questions as this is true assumptions - rich countries have more covid cases. We think this is due to the fact the in rich countries population is tested massively and also statistic is kept more accurate to count cases than comparing with poor countries. The poor countries do not count cases successfully and even more critical is that they do not test the population as the test are not available for most of them.
 
 
 ```{r warning = FALSE, message = FALSE}
@@ -185,7 +207,9 @@ ggplot(data_agg, aes(x = total_cases, y = gdp_per_capita, color = continent,
 ```
 
 
-## 7. Heatmap to show I and II wave
+## 8. Heatmap to show I and II wave of Covid
+
+Below heatmap shows monthly new covid cases for European countries. The Heatmap gives us good demonstration when we have first and the second waves of the corona virus cases spikes. The colors are based on the covid cases. The dark red is a lot of cases while yeallow whiteish is less cases. In the first wave Spain, Italy, Germany and France has a lot of case during March and April in 2020. While during the second wave we see a lot of redish cells during October 2020 and January 2021, especially in the countries such as Spain, Italy, Poland, Germany, France, Belgium and the Netherlands. 
 
 ```{r}
 library(lubridate)
@@ -343,7 +367,6 @@ data_sel <- data.frame(data) %>% dplyr::select(continent, location, date, new_ca
 
 knitr::kable(data_sel[1:5,])
 
-#datatable(head(data_sel), caption = 'Table 1: This is a simple caption for the table.')
 
 ```
 
@@ -466,13 +489,6 @@ head(df)
 
 ```{r}
 
-
-#plot<- df2 %>%
-#  ggplot( aes(x=Date, y=Exchange_rate,color = Currency)) +
-#    geom_line()
-#plot
-
-
 currency_vs_country <- read.csv("tableconvert_csv_9gbdx9.csv")
 colnames(currency_vs_country)[1]<-"Country"
 temp1<- merge(x=data_sel, y=currency_vs_country, by.x = "location", by.y = "Country" , all.x = TRUE)
@@ -551,7 +567,7 @@ anim_save("plot2.gif")
 
 
 
-```{r set-options}
+```{r results="hide", fig.show="hide"}
 options(width = 800)
 library(treemap)
 library(htmlwidgets)
@@ -703,15 +719,6 @@ ggplot(Reg$model, aes_string(x = names(Reg$model)[2], y = names(Reg$model)[1], c
                      " P =",round(summary(Reg)$coef[2,4], 2)))
 }
 ggplotRegression(Reg2)
-
-
-
-
-
-
-
-
-
 
 
 ```
