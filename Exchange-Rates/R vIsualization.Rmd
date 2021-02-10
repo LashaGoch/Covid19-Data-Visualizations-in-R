@@ -514,7 +514,7 @@ library(stats)
 options(scipen=999)
 
 
-#exchange_rate_euro <- read.csv("eurofxref-hist.csv", stringsAsFactors=FALSE)
+exchange_rate_euro <- read.csv("eurofxref-hist.csv", stringsAsFactors=FALSE)
 exchange_rate_euro <- exchange_rate_euro[,c(1:42)]
 exchange_rate_euro[,c(2:42)] <- lapply(exchange_rate_euro[,c(2:42)],as.numeric)
 exchange_rate_euro[is.na(exchange_rate_euro)] = 0
