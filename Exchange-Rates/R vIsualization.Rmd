@@ -9,7 +9,7 @@ output:
 ---
 
 
-```{r setup, echo=FALSE, cache=FALSE}
+```{r setup, echo=FALSE, cache=FALSE,warning = FALSE}
 library(knitr)
 library(rmdformats)
 ## Global options
@@ -796,7 +796,7 @@ One of the clear insights after analysis is that **countries from rich group hav
 While deaths cases are high in North America, South America and Asia, in Europe it is rather steady on lower level. This is point out the high quality health system that European countries have comparing with other countries outside of Europe.
 
 
-## References
+# References
 
 1. Codes and materials provided by the Mgr Piotr Ćwiakowski during the Graduate course in Advanced Visualizations in R, University of Warsaw, Faculty of Economic Sciences
 2. Antoine Soetewey, COVID-19 in Belgium: is it over yet? https://statsandr.com/blog/covid-19-in-belgium-is-it-over-yet/
