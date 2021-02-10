@@ -514,7 +514,7 @@ library(stats)
 options(scipen=999)
 
 
-exchange_rate_euro <- read.csv("eurofxref-hist.csv", stringsAsFactors=FALSE)
+exchange_rate_euro <- read.csv("eurofxref-hist/eurofxref-hist.csv", stringsAsFactors=FALSE)
 exchange_rate_euro <- exchange_rate_euro[,c(1:42)]
 exchange_rate_euro[,c(2:42)] <- lapply(exchange_rate_euro[,c(2:42)],as.numeric)
 exchange_rate_euro[is.na(exchange_rate_euro)] = 0
@@ -610,7 +610,7 @@ gganimate::animate(plot2, duration = 20, fps = 20, renderer = gifski_renderer())
 anim_save("plot2.gif")
 
 ```
-# 17. Interartive Tree Map of Exchange Rate Fluctuation
+# 17. Interactive Tree Map of Exchange Rate Fluctuation
 
 Here we provide a different view of how much fluctuation did the Exchage rates of different countries go through overtime across continents in the time period we are observing. In the time period observed, we display the distinct shares of the exchange rate, on any given day, in terms of the maximum value (or the most devalued exchange rate value) that was observed in the time period.The higher the ratio on any given day, the more devalued the currency of that country was on that day. We have the distinct values that were observed in the time period that we are observing, but when we drill down to country level, we see the distinct values in a shape that is insicative of the duration for which that particular value(or share of exchange rate in terms of maximum value) prevailed. 
 This is a more aggregated view as opposed to the trend that we were observing for each day earlier.But, the more the numberof square, the more fluctuation that happened within that particular continent/country.
@@ -656,7 +656,7 @@ options(width = 800)
 
 
 ```
-##18. Data Preparation for Regression and Doing a Simple Regression
+#18. Data Preparation for Regression and Doing a Simple Regression
 
 Here we are just preparing the Data that we would require for doing a simple regression by doing the required merges and joins.
 
@@ -701,7 +701,7 @@ Reg2 <- lm(formula = Norm ~ Norm_cases + continent , data = reg_df, intercept =F
 summ(Reg2 , exp = TRUE)
 ```
 
-## 19. How does Exchange Rate differ in a Continent with given no. of Covid Cases
+# 19. How does Exchange Rate differ in a Continent with given no. of Covid Cases
 
 Here we are trying to display the commanity that is observed in all the continents when Covid cases rise: the Currency of the countries on that continent go through a devalution , meaning that Covid has a negative impact in the country's currency's value. As we see, in all the bars, the shade is darker on the top parts of them, indicating a high value of the exchange rate, further confirming that higher cOvid cAses is accompanied by a  more devalued currency for a given continent.
 ```{r}
@@ -741,7 +741,7 @@ anim_save("plot3.gif")
 ```
 
 
-## 20. Regrression Fit 1
+# 20. Regrression Fit 1
 As we can see fromthe graph, the model is a linear model which predicts a linear rise between Covid cases and Exchange Rate.
 
 
@@ -753,7 +753,7 @@ ggplotly(effect_plot(Reg2, pred = Norm_cases, interval = TRUE, colors = "purple"
 ```
 
 
-## 21. Regression Fit 2
+# 21. Regression Fit 2
 In this graph, we have also fit of the model, but with data pont displayed. As you can see, Europe us limited to the top of the graph beacse of the exteme traned that was observed both in its exchange rate and covid cases per capita and day.
 Asia also has some outlier, but those are mostly in cases were covid cases are comparitively low and so is the exchange rate (meaning the more valued the currency of that country is). Th other continents are still closer to the model line.
 
@@ -783,7 +783,7 @@ ggplotRegression(Reg2)
 
 
 
-## Conclusion
+# Conclusion
 
 In this project we **analyzed different datasets** such as **Covid Cases by country and date**, **economic parameters by country**, **foreign exchange rates for different countries**. We specifically observed **rich** countries vs **poor** countries and how the covid developed in each group of countries. We also look at the data by different continents to see the patterns.
 
