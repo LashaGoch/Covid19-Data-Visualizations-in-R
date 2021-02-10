@@ -66,7 +66,7 @@ data <- read_csv("https://covid.ourworldindata.org/data/owid-covid-data.csv")
 
 ## 3. Data Description
 
-Data contains 67,439 rows and 59 variables. Data is increasing since an observation is about one country data per day. Therefore, each day the data points are increasing. 
+Data contains `67,439` rows and `59` variables. Data is increasing since an observation is about one country data per day. Therefore, each day the data points are increasing. 
 
 ```{r}
 glimpse(data)
@@ -84,7 +84,7 @@ knitr::kable(data[1:5,])
 
 ## 4. Aggregating Data
 
-We will select only important colums such as `location`, `continent`, `gdp_per_capita`, `population_density`, `total_cases`, `total_cases_per_million`, `population`. This is to use wisely our computation memory and derive useful insights in our graphs. Next step is to remove *World* and *International* from the dataset since we will concentrace on countries and those files will be outliers in the graphs. 
+We will select only important colums such as `location`, `continent`, `gdp_per_capita`, `population_density`, `total_cases`, `total_cases_per_million`, `population`. This is to use wisely our computation memory and derive useful insights in our graphs. Next step is to remove **World** and **International** from the dataset since we will concentrace on countries and those files will be outliers in the graphs. 
 
 ```{r}
 library(dplyr)
@@ -107,7 +107,7 @@ knitr::kable(data_agg[1:10,], capture = "Dataset first 10 records")
 ```
 
 
-## 5. Distributions
+## 5. Distribution
 
 Let's start out analysis with distributions. First of all, let's observe the distribution of the `GDP_per_capita`. On the graph we see that the distribution is skewed on the right. The majority of countries have less than 20.000 USD GDP per Capita. Which means that the world has much more poor countries than rich.
 
@@ -169,7 +169,7 @@ ggplot(data_for_dist.a, aes(x = continent, y = gdp_per_capita_group)) +
 
 ## 7.  Rich vs Poor Countries & Covid Cases
 
-Looking at the below graph we want to answer question, *Do rich countries have more covid cases?* Graph answers that questions as this is true assumptions - rich countries have more covid cases. We think this is due to the fact the in rich countries population is tested massively and also statistic is kept more accurate to count cases than comparing with poor countries. The poor countries do not count cases successfully and even more critical is that they do not test the population as the test are not available for most of them.
+Looking at the below graph we want to answer question, **Do rich countries have more covid cases?** Graph answers that questions as this is true assumptions - rich countries have more covid cases. We think this is due to the fact the in rich countries population is tested massively and also statistic is kept more accurate to count cases than comparing with poor countries. The poor countries do not count cases successfully and even more critical is that they do not test the population as the test are not available for most of them.
 
 
 ```{r warning = FALSE, message = FALSE}
@@ -207,9 +207,9 @@ ggplot(data_agg, aes(x = total_cases, y = gdp_per_capita, color = continent,
 ```
 
 
-## 8. Heatmap to show I and II wave of Covid
+## 8. Heatmap of I and II Wave of Covid
 
-Below heatmap shows monthly new covid cases for European countries. The Heatmap gives us good demonstration when we have first and the second waves of the corona virus cases spikes. The colors are based on the covid cases. The dark red is a lot of cases while yeallow whiteish is less cases. In the first wave Spain, Italy, Germany and France has a lot of case during March and April in 2020. While during the second wave we see a lot of redish cells during October 2020 and January 2021, especially in the countries such as Spain, Italy, Poland, Germany, France, Belgium and the Netherlands. 
+Below heatmap shows monthly new covid cases for European countries. **The Heatmap gives us good demonstration when we have first and the second waves of the corona virus cases spikes**. The colors are based on the covid cases. The dark red is a lot of cases while yeallow whiteish is less cases. In the first wave Spain, Italy, Germany and France has a lot of case during March and April in 2020. While during the second wave we see a lot of redish cells during October 2020 and January 2021, especially in the countries such as Spain, Italy, Poland, Germany, France, Belgium and the Netherlands. 
 
 ```{r}
 library(lubridate)
@@ -260,10 +260,15 @@ ggplot(data_for_month, aes(month, location)) +
 
 
 
+## 9. Top 15 Countries by Covid Cases
 
+Let's observe top 15 countries to see if covid cases are **concentrated on one continent or it is spread evenly**. Looking at the chart of top 15 countries we can see that only one country is from Africa, country - South Africa. This tells us again a story that rich countries are able to test and count the covid cases well. South Africa is richest country in Africa.
 
+The majory of countries in Top 15 are located in Europe. 7 countries out of 15 are european countries. 
 
+Two countries are from North America - United States and Mexico. While South America is represented by three countries, they obviously have the biggest population in the continet. They are Brazil, Colombia and Argentina.
 
+One country from Middle East - Turkey and one country from Asia - India. 
 
 ```{r warning = FALSE}
 new_data_agg <- data_agg[order(-data_agg$total_cases),]
@@ -271,7 +276,7 @@ new_data_agg$total_cases_mln <- as.numeric(new_data_agg$total_cases/1000000)
 new_data_agg <- new_data_agg[1:15,]
 ggplot(data=new_data_agg, aes(x= total_cases_mln, y = reorder(location, total_cases_mln), fill=continent)) +
   geom_bar(width = 0.8, stat = 'identity') +
-  labs(title = 'Which are top 10 countries by Total Cases?',
+  labs(title = 'Which are top 15 countries by Total Cases?',
        subtitle = "USA, India & Brazil combines 45% of World's Total Cases",
        caption = 'Date: 2021-Jan-29') + 
   xlab('Total Cases [mln]') +
@@ -289,6 +294,13 @@ ggplot(data=new_data_agg, aes(x= total_cases_mln, y = reorder(location, total_ca
   scale_fill_brewer(palette="Paired")
 
 ```
+
+## 10. Covid in Rich Countries
+
+The special scatterplot below is dedicated to answer one question - **do mostly rich countries getting infected with virus?** With one look the answer is positive, yes, the more `GDP_per_capita` the more `total_cases_per_million`. For example, Luxembourg, Qatar and Singapore are top three countries with highest `GDP_per_capita`, however, they are also on the top of the `total_cases_per_million`.
+
+Green balls on the top-right represent European countries and they are certainly on the top of the scatter plot by both metrics `GDP_per_capita` and `total_cases_per_million`. Contrary, African countries in red are way below in both metrics.
+
 
 
 ```{r}
@@ -336,6 +348,13 @@ ggiraph(code = print(g_int))
 
 ```
 
+## 11. Distribution of Wealth by Continents
+
+**Does equlity exist between countries in different continents?** Let's study the below histograms. The Europe is more or less normally distributed which is desirable for all other continents, but are the same distribution of `GDP_per_capita` on different continents? 
+
+Africa is mostly on the left side, many poor countries just with small amoount of `GDP_per_capita`.
+
+Asia, less but North America and South America is more or less normally distributed, however, North America and Asia have outlires such as the United States, Canada, Singapore and Hong Kong.
 
 
 ```{r warning=FALSE}
@@ -369,6 +388,19 @@ knitr::kable(data_sel[1:5,])
 
 
 ```
+
+## 12. Development of Covid Cases
+
+The racing chart below shows how covid cases were increasing in different continets from the start until now.
+
+The figures show **total deaths** on the left side and **total cases** on the right side. 
+
+In Asia, India started quite late but it is leading now with the number of covid cases. 
+
+In Europe, countries start ver quick on covid cases but fortunately do not climb up on the total deaths axis.
+
+Unfortunately, in US the total deaths side is climbed by the United States and in South America Brazil is following the US trend.
+
 
 
 ```{r message = FALSE, warning = FALSE, results = FALSE}
@@ -405,7 +437,11 @@ anim_save("gifplot.gif")
 
 ![](gifplot.gif)
 
+## 13. World Map
 
+The map represents countries coloured by `GDP_per_capita`. Darker the color bigger the `GDP_per_capita`. Th North America, Europe and Australia is mostly dark coloured since their high `GDP_per_capita`.
+
+Map is interactive and when you hover the country it displays the information about `GDP_per_capita`, `Total cases`, `Cases per million`, `population`.
 
 
 ```{r}
@@ -722,3 +758,31 @@ ggplotRegression(Reg2)
 
 
 ```
+
+
+
+## Conclusion
+
+In this project we **analyzed different datasets** such as **Covid Cases by country and date**, **economic parameters by country**, **foreign exchange rates for different countries**. We specifically observed **rich** countries vs **poor** countries and how the covid developed in each group of countries. We also look at the data by different continents to see the patterns.
+
+We used the advanced visualizations to see the trends, histograms, scatterplots, animated graps to see the insights better than we could derive from the dry tables with only numbers. After running visualizations it is obvious that patterns are much better visible than what we could see without visualizations. 
+
+One of the clear insights after analysis is that **countries from rich group have more covid cases**, this can be explained by different factors: `1. They are able to run testing for their population. 2. They are capable to count the covid cases`. Contrary, countries from poor countries are not able to count covid cases and do not have fund to provide free or organized tests for the population. 
+
+**Outliers** are in each continent or region, South Africa in Africa, India in Asia, Turkey in Middle East, United States in North America and Brazil in South America. 
+
+While deaths cases are high in North America, South America and Asia, in Europe it is rather steady on lower level. This is point out the high quality health system that European countries have comparing with other countries outside of Europe.
+
+
+## References
+
+1. Codes and materials provided by the Mgr Piotr Ćwiakowski during the Graduate course in Advanced Visualizations in R, University of Warsaw, Faculty of Economic Sciences
+2. Antoine Soetewey, COVID-19 in Belgium: is it over yet? https://statsandr.com/blog/covid-19-in-belgium-is-it-over-yet/
+3. Data source: https://github.com/owid/covid-19-data/tree/master/public/data
+4. Coronavirus COVID-19 outbreak statistics and forecast v0.86 http://www.bcloud.org/e/
+5. The Top 74 Ggplot2 Open Source Projects https://awesomeopensource.com/projects/ggplot2
+6. gganimate https://github.com/thomasp85/gganimate
+
+
+
+
